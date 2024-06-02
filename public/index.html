@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload & Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 80%;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navbar -->
+    <nav class="bg-white p-4 shadow-md fixed w-full top-0 z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="#home" class="text-xl font-bold">MyApp</a>
+            <ul class="flex space-x-4">
+                <li><a href="#home" class="text-gray-600 hover:text-blue-500">Home</a></li>
+                <li><a href="#" id="uploadBtn" class="text-gray-600 hover:text-blue-500">Upload</a></li>
+                <li><a href="#gallery" class="text-gray-600 hover:text-blue-500">Gallery</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="pt-16 flex flex-wrap justify-center bg-blue-100 min-h-screen p-4">
+        <div class="w-full text-center">
+            <h1 class="text-4xl font-bold mb-4">Welcome to MyApp</h1>
+            <p class="text-lg mb-6">A simple application to upload and view your images and videos.</p>
+        </div>
+        <div id="homeGallery" class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full"></div>
+    </section>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4">Upload Your Files</h2>
+            <form id="uploadForm" class="flex flex-col items-center">
+                <input type="file" name="file" id="fileInput" class="mb-4 block w-full">
+                <div id="filePreview" class="mb-4"></div>
+                <div class="flex space-x-4">
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded">Upload</button>
+                    <button type="button" id="cancelUpload" class="bg-red-500 text-white py-2 px-4 rounded">Cancel</button>
+                </div>
+            </form>
+            <div id="loadingSpinner" class="spinner hidden mx-auto my-6"></div>
+            <button id="closeModal" class="bg-gray-500 text-white py-2 px-4 rounded mt-4">Close</button>
+        </div>
+    </div>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="pt-16 bg-gray-200 p-6 min-h-screen">
+        <div class="container mx-auto">
+            <h2 class="text-3xl font-bold mb-6 text-center">Gallery</h2>
+            <button id="fetchFilesButton" class="bg-green-500 text-white py-2 px-4 rounded mb-6">Fetch Files</button>
+            <div id="galleryContent" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 text-center shadow-md">
+        <p>All rights reserved 2024 &copy; Powered by YourName</p>
+    </footer>
+
+    <script>
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('uploadModal').classList.remove('hidden');
+        });
+
+        document.getElementById('cancelUpload').addEventListener('click', () => {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('filePreview').innerHTML = '';
+            document.getElementById('uploadModal').classList.add('hidden');
+        });
+
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('uploadModal').classList.add('hidden');
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const preview = document.getElementById('filePreview');
+            preview.innerHTML = '';
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'w-full h-auto';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const spinner = document.getElementById('loadingSpinner');
+
+            if (!file) {
+                alert('Please select a file to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show the spinner
+            spinner.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    alert('File uploaded successfully.');
+                    document.getElementById('uploadModal').classList.add('hidden');
+                    fetchFiles();
+                } else {
+                    alert('Error uploading file.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading file.');
+            } finally {
+                // Hide the spinner
+                spinner.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('fetchFilesButton').addEventListener('click', fetchFiles);
+
+        window.addEventListener('load', fetchFiles);
+
+        async function fetchFiles() {
+            try {
+                const response = await fetch('/files');
+                const files = await response.json();
+                const gallery = document.getElementById('galleryContent');
+                const homeGallery = document.getElementById('homeGallery');
+                gallery.innerHTML = ''; // Clear the gallery before appending new images
+                homeGallery.innerHTML = ''; // Clear the home gallery before appending new images
+
+                files.forEach(file => {
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'p-2 border rounded';
+
+                    const img = document.createElement('img');
+                    img.src = file.url;
+                    img.alt = file.filename;
+                    img.className = 'w-full h-64 object-cover';
+                    fileElement.appendChild(img);
+
+                    gallery.appendChild(fileElement);
+                    homeGallery.appendChild(fileElement.cloneNode(true));
+                });
+            } catch (error) {
+                console.error('Error fetching files:', error);
+            }
+        }
+    </script>
+</body>
+</html>
