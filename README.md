@@ -27,5 +27,5 @@ This project is a web application that allows users to upload files along with a
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/PARASMANI-KHUNTE/Photoshare
 cd UploadPhotoWithTitle
