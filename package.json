@@ -1,11 +1,16 @@
 {
+  "scripts": {
+    "dev" : "nodemon",
+    "start": "nodemon server"
+  },
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "firebase": "^10.12.2",
+    "firebase": "^10.12.5",
     "init": "^0.1.2",
-    "mongodb": "^6.7.0",
+    "mongodb": "^6.8.0",
     "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.4",
     "uuid": "^9.0.1"
   }
 }
